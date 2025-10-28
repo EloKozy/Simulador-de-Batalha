@@ -1,0 +1,6 @@
+Código utilizado para o princípio de criar um simulador de batalha utilizando o conceito de um RPG com Heróis e Inimigos.
+Foi utilizado no código a "Herança", "Sobreposição de funções", "Polimorfismo" e as "Variáveis de referência ou estruturas do tipo array genérico".
+No código existem conceitos como Cura de aliados e Auto-cura, possuíndo uma "Healer" que possui a habilidade de curar os heróis e o OrcKing que tem a habilidade de se curar ao soltar um rugido amedontrador
+
+Link para o Linkendin possuíndo o vídeo explicativo do código e como foi utilizado a Herança entre outros:
+https://www.linkedin.com/posts/lucas-borges-sousa-7a8b93385_lucas-borges-sousa-trabalho-de-programa%C3%A7%C3%A3o-activity-7388894342678999040-kmgB?utm_source=share&utm_medium=member_desktop&rcm=ACoAAF8JhbAB5tXa--L0a5rc5x5n9npRNNzr9Uo
