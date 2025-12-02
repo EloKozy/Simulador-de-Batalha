@@ -1,0 +1,330 @@
+import random
+
+# A classe RPG é a classe base para todas as entidades (heróis e inimigos) presentes no jogo.
+# Aqui também ficam os atributos fundamentais para o RPG, os Status.
+class RPG:
+    def __init__(self, name, classes, health, strength, intelligence, dexterity):
+        self.name = name
+        self.classes = classes
+        self.health = health
+        self.max_health = health
+        self.strength = strength
+        self.intelligence = intelligence
+        self.dexterity = dexterity
+
+# Aqui estão as funções onde todos os personagens possuem.
+    def level(self):
+        return 5
+    def is_alive(self):
+        return self.health > 0
+    def take_damage(self, amount, defense=0):
+        damage_taken = max(1, amount - defense)
+        self.health = max(0, self.health - damage_taken)
+        print(f"{self.name} recebeu {damage_taken} de dano (defendeu {defense})! HP restante: {self.health}/{self.max_health}")
+        if not self.is_alive():
+            print(f"{self.name} foi derrotado!")
+    def defend_value(self):
+        return int(self.dexterity / 2) + random.randint(1, 4)
+    def attack_value(self):
+        return self.strength + random.randint(0, 3)
+    def __str__(self):
+        status = "Vivo" if self.is_alive() else "Derrotado"
+        return f"{self.name} ({self.classes}) - LVL {self.level()} | HP: {self.health}/{self.max_health} | {status}"
+
+# Essas classes herdam de RPG e implementam o polimorfismo, sobrescrevendo métodos como
+# level, attack_value e defend_value para refletir as características únicas de cada classe ou inimigo.
+class Warrior(RPG):
+    def __init__(self, name, classes, health, strength, intelligence, dexterity, kills):
+        super().__init__(name, classes, health, strength, intelligence, dexterity)
+        self.kill = kills
+    def level(self):
+        return self.kill + 1 + super().level()
+    def attack_value(self):
+        print(f"{self.name} ataca com sua espada!")
+        return self.strength + random.randint(3, 6)
+    def defend_value(self):
+        return int(self.dexterity / 2) + random.randint(2, 5)
+
+class Archer(RPG):
+    def __init__(self, name, classes, health, strength, intelligence, dexterity, precision):
+        super().__init__(name, classes, health, strength, intelligence, dexterity)
+        self.precision = precision
+    def level(self):
+        return (self.precision // 2) + super().level()
+    def attack_value(self):
+        base = self.dexterity // 2 + random.randint(3, 7)
+        if random.random() < 0.25:
+            print(f"{self.name} acertou um TIRO CRÍTICO!")
+            return int(base * 1.5)
+        print(f"{self.name} disparou uma flecha!")
+        return base
+    def defend_value(self):
+        return int(self.dexterity / 3) + random.randint(1, 6)
+
+class Healer(RPG):
+    def __init__(self, name, classes, health, strength, intelligence, dexterity, assistence):
+        super().__init__(name, classes, health, strength, intelligence, dexterity)
+        self.assistence = assistence
+    def level(self):
+        return self.assistence + 1 + super().level()
+    def attack_value(self):
+        print(f"{self.name} lança um feitiço ofensivo!")
+        return self.intelligence // 3 + random.randint(1, 4)
+    def defend_value(self):
+        return int(self.dexterity / 3) + random.randint(1, 3)
+    def heal(self, ally):
+        if not self.is_alive():
+            return
+        heal_amount = self.intelligence + random.randint(2, 5)
+        ally.health = min(ally.max_health, ally.health + heal_amount)
+        print(
+            f"{self.name} curou {ally.name} em {heal_amount} HP! ({ally.health}/{ally.max_health})")
+
+class Enemy(RPG):
+    def __init__(self, name, enemy_type, health, strength, intelligence, dexterity, danger_level):
+        super().__init__(name, enemy_type, health, strength, intelligence, dexterity)
+        self.danger = int(danger_level)
+    def level(self):
+        return super().level() * 2 + self.danger
+    def attack_value(self):
+        return self.strength + random.randint(0, 3)
+    def defend_value(self):
+        return int(self.dexterity / 2) + random.randint(1, 3)
+
+class Goblin(Enemy):
+    def __init__(self, name, rank="Comum"):
+        base_health = 12 if rank == "Comum" else 18
+        base_strength = 5 if rank == "Comum" else 7
+        base_intelligence = 3
+        base_dexterity = 7
+        danger = 1 if rank == "Comum" else 3
+        super().__init__(name, f"Goblin {rank}", base_health,
+                         base_strength, base_intelligence, base_dexterity, danger)
+    def attack(self, target):
+        base = self.strength + random.randint(0, 3)
+        if random.random() < 0.15:
+            base *= 2
+            print(f"{self.name} acertou um golpe CRÍTICO em {target.name}!")
+        else:
+            print(f"{self.name} esfaqueou {target.name}!")
+        defense = target.defend_value()
+        target.take_damage(base, defense)
+
+class Orc(Enemy):
+    def __init__(self, name, berserk=False):
+        base_health = 30 if not berserk else 35
+        base_strength = 8 if not berserk else 10
+        base_intelligence = 5
+        base_dexterity = 6
+        danger = 4 if not berserk else 6
+        super().__init__(name, "Orc Guerreiro", base_health,
+                         base_strength, base_intelligence, base_dexterity, danger)
+        self.berserk = berserk
+    def attack_value(self):
+        base = self.strength + random.randint(2, 5)
+        if self.berserk:
+            print(f"{self.name} entrou em fúria!")
+            base = int(base * 1.2)
+        return base
+    def defend_value(self):
+        return int(self.dexterity / 2) + random.randint(1, 3)
+
+class OrcKing(Enemy):
+    def __init__(self, name, sovereign):
+        super().__init__(name, "Rei Orc", 45, 11, 8, 6, 8)
+        self.sovereign = sovereign
+    def attack_value(self):
+        print(f"{self.name} desferiu um golpe real!")
+        return self.strength + random.randint(2, 6)
+    def defend_value(self):
+        return int(self.dexterity / 2) + random.randint(1, 4)
+    def heal_self(self):
+        if random.random() < 0.25:
+            heal = 4
+            self.health = min(self.max_health, self.health + heal)
+            print(
+                f"{self.name} rugiu e recuperou {heal} de HP! ({self.health}/{self.max_health})")
+            
+# Foi utilizado a "Estratégia" pelo motivo de organizado, evitar if/elif/else e fazendo com que
+# cada personagem possua uma ação própria e definida pela sua própria IA. (Ação de Turno)
+class ActionStrategy:
+    def execute(self, user, party, enemies):
+        raise NotImplementedError
+
+class WarriorStrategy(ActionStrategy):
+    def execute(self, user, party, enemies):
+        alvos_vivos = [e for e in enemies if e.is_alive()]
+        if not alvos_vivos:
+            return
+        alvo = random.choice(alvos_vivos)
+        damage = user.attack_value()
+        defense = alvo.defend_value()
+        alvo.take_damage(damage, defense)
+
+class ArcherStrategy(ActionStrategy):
+    def execute(self, user, party, enemies):
+        alvos_vivos = [e for e in enemies if e.is_alive()]
+        if not alvos_vivos:
+            return
+        alvo = random.choice(alvos_vivos)
+        damage = user.attack_value()
+        defense = alvo.defend_value()
+        alvo.take_damage(damage, defense)
+
+class HealerStrategy(ActionStrategy):
+    def execute(self, user, party, enemies):
+        healer_targets = [
+            h for h in party if h.is_alive() and h.health < h.max_health]
+        if healer_targets and random.random() < 0.8:
+            ally = random.choice(healer_targets)
+            user.heal(ally)
+        else:
+            if random.random() < 0.4:
+                user.heal(user)
+            else:
+                alvo = random.choice([e for e in enemies if e.is_alive()])
+                damage = user.attack_value()
+                defense = alvo.defend_value()
+                alvo.take_damage(damage, defense)
+
+class GoblinStrategy(ActionStrategy):
+    def execute(self, user, party, enemies):
+        target = random.choice([h for h in party if h.is_alive()])
+        user.attack(target)
+        if random.random() < 0.20:
+            idx = party.index(target)
+            party[idx] = BleedDecorator(target, duracao=2, dano_por_turno=2)
+            print(
+                f"{user.name} causou SANGRAMENTO em {target.name} por 2 turnos!")
+
+class OrcStrategy(ActionStrategy):
+    def execute(self, user, party, enemies):
+        if random.random() < 0.20:
+            return "try_berserk"
+        target = random.choice([h for h in party if h.is_alive()])
+        damage = user.attack_value()
+        defense = target.defend_value()
+        target.take_damage(damage, defense)
+        return None
+
+class OrcKingStrategy(ActionStrategy):
+    def execute(self, user, party, enemies):
+        if random.random() < 0.25:
+            user.heal_self()
+        target = random.choice([h for h in party if h.is_alive()])
+        damage = user.attack_value()
+        defense = target.defend_value()
+        target.take_damage(damage, defense)
+
+# Classes do Decorator: O decorator neste código foi utilizado para adicionar efeitos de combate
+# sendo um exemplo deles o Bleed(Sangramento), que dá dano por Tick, por 2/3 turnos.
+class TimedEffect(RPG):
+    def __init__(self, entity, duracao):
+        self.entity = entity
+        self.turnos_restantes = duracao
+    def __getattr__(self, item):
+        return getattr(self.entity, item)
+    def is_alive(self):
+        return self.entity.is_alive()
+    def tick(self):
+        self.on_tick()
+        self.turnos_restantes -= 1
+        return self.turnos_restantes > 0
+    def on_tick(self):
+        pass
+
+# O decorator foi utilizado nesta parte como um Buff temporário, utilizando como o próprio nome diz, um Status
+# de Berserker, onde o Orc listado para ser o único a ter este buff, poderá usar para aumentar seu dano por X turnos.
+class BerserkerDecorator(TimedEffect):
+    def __init__(self, entity, duracao=3, multiplier=1.5):
+        super().__init__(entity, duracao)
+        self.multiplier = multiplier
+    def attack_value(self):
+        base = self.entity.attack_value()
+        boosted = int(base * self.multiplier)
+        print(f"{self.name} (Berserker) causa {boosted} (base {base})!")
+        return boosted
+
+class BleedDecorator(TimedEffect):
+    def __init__(self, entity, duracao=2, dano_por_turno=2):
+        super().__init__(entity, duracao)
+        self.dano_por_turno = dano_por_turno
+    def on_tick(self):
+        if self.entity.is_alive():
+            print(f"{self.name} sofre {self.dano_por_turno} de SANGRAMENTO.")
+            self.entity.take_damage(self.dano_por_turno, defense=0)
+
+# Está parte de trata dos Status dos personagens, (Nome, Classe, Vida e etc...).
+warrior = Warrior("Tharok", "Paladino", 30, 10, 8, 11, 9)
+warrior.strategy = WarriorStrategy()
+archer = Archer("Thalion", "Ranger", 24, 12, 10, 16, 20)
+archer.strategy = ArcherStrategy()
+healer = Healer("Isolde", "Clérigo", 22, 9, 17, 9, 8)
+healer.strategy = HealerStrategy()
+
+goblin = Goblin("Grubnak", "Líder")
+goblin.strategy = GoblinStrategy()
+orc = Orc("Grumash", berserk=False)
+orc.strategy = OrcStrategy()
+orcking = OrcKing("Zoghtar", 6)
+orcking.strategy = OrcKingStrategy()
+
+party = [warrior, archer, healer]
+enemies = [goblin, orc, orcking]
+
+# Utilizado para atualizar os buffs a cada turno que se passa, além de alertar quando o buff expira.
+def atualizar_effects(lista):
+    for idx, item in enumerate(lista):
+        if hasattr(item, "tick") and callable(getattr(item, "tick")):
+            active = item.tick()
+            if not active:
+                original = item.entity
+                lista[idx] = original
+                print(f"{original.name} saiu do efeito especial.")
+
+print("=== STATUS INICIAL ===")
+for c in party + enemies:
+    print(c)
+print("\n=== INÍCIO DA BATALHA ===")
+
+# E a parte final, onde a batalha entra em Loop até que uma das duas "Facções" morram, sendo elas, Party e Enemies.
+while any(hero.is_alive() for hero in party) and any(enemy.is_alive() for enemy in enemies):
+    print("\n--- Novo turno ---")
+    random.shuffle(party)
+    for idx, hero in enumerate(party):
+        if hero.is_alive():
+            hero.strategy.execute(hero, party, enemies)
+
+# Status aletórios.
+    random.shuffle(enemies)
+    for idx, enemy in enumerate(enemies):
+        if not enemy.is_alive():
+            continue
+        if isinstance(enemy, Orc):
+            result = enemy.strategy.execute(enemy, party, enemies)
+            if result == "try_berserk":
+                enemies[idx] = BerserkerDecorator(
+                    enemy, duracao=3, multiplier=1.5)
+                print(f"{enemy.name} entrou em BERSERKER por 3 turnos!")
+                continue
+            else:
+                pass
+            continue
+        if isinstance(enemy, Goblin):
+            enemy.strategy.execute(enemy, party, enemies)
+        elif isinstance(enemy, OrcKing):
+            enemy.strategy.execute(enemy, party, enemies)
+        else:
+            target = random.choice([h for h in party if h.is_alive()])
+            dmg = enemy.attack_value()
+            defense = target.defend_value()
+            target.take_damage(dmg, defense)
+
+    atualizar_effects(party)
+    atualizar_effects(enemies)
+
+print("\nA batalha terminou!")
+if any(hero.is_alive() for hero in party):
+    print("Os heróis venceram!")
+else:
+    print("Os inimigos triunfaram...")
